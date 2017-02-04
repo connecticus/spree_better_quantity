@@ -1,4 +1,4 @@
-Deface::Override.new(virtual_path: 'spree/admin/products/_form.html.erb',
+Deface::Override.new(virtual_path: 'spree/admin/products/_form',
   name: 'add_quantities_to_product_edit',
   insert_after: "erb[loud]:contains('text_field: :available_on')",
   text: "
