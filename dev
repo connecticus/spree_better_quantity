@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+
+# Set environment variables for dev or CI
+export APP_PORT=${APP_PORT:-80}
+export DB_PORT=${DB_PORT:-3306}
+export PROJECT_NAME=${PROJECT_NAME:-"Sales Backend"}
+COMPOSE_DEV="docker-compose"
+
+# THE SCRIPT
+
+# Check for arguments passed for the script
+# If there are any, process then
+if [ $# -gt 0 ]; then
+
+  # STOP - stops current docker-compose 
+  if [ "$1" == "stop" ]; then
+    shift 1 # get next arg
+    $COMPOSE_DEV down
+
+  # RAILS - runs a rails command
+  elif [ "$1" == "rails" ]; then
+    shift 1 # get next arg
+    $COMPOSE_DEV run --rm \
+        web \
+        bundle exec rails "$@"
+
+  # PRODCONSOLE - runs the rail app console connected to production DB
+  elif [ "$1" == "prodconsole" ]; then
+    shift 1
+    $COMPOSE_DEV run --rm \
+        -e RAILS_ENV=production \
+        web \
+        bundle exec rails console
+
+  # DB - creates DB and executes migrations
+  elif [ "$1" == "db" ]; then
+    shift 1 # get next arg
+    $COMPOSE_DEV run --rm \
+        web \
+        bundle exec rails db:create db:migrate 
+
+  # SPREE - change to extensions folder and run a spree command
+  elif [ "$1" == "spree" ]; then
+    shift 1 # get next arg
+    # Create new rails migration on extension folder
+    # Need to pass FOLDER_NAME and then arguments to rails g migration
+    if [ "$1" == "bundle" ]; then
+      shift 1
+      folder_name=$1
+      $COMPOSE_DEV run --rm \
+          -w /home/app/extensions/$folder_name \
+          web \
+          bundle install --jobs 7
+
+    fi
+    if [ "$1" == "migration" ]; then
+      shift 1
+      folder_name=$1
+      shift 1
+      $COMPOSE_DEV run --rm \
+          -w /home/app/extensions/$folder_name \
+          web \
+          bundle exec rails g migration "$@"
+    else
+      $COMPOSE_DEV run --rm \
+          -w /home/app/extensions \
+          -e BUNDLE_GEMFILE=/home/app/webapp/Gemfile \
+          web \
+          bundle exec spree "$@"
+    fi
+    
+
+  # LOGS - outputs logs, can have -f argument
+  elif [ "$1" == "logs" ]; then
+    shift 1 # get next arg
+    $COMPOSE_DEV logs "$@"
+
+  # DEFAULT: pass to docker-compose
+  else
+    $COMPOSE_DEV "$@"
+  fi
+# If no argument passed, start dev environment
+else
+  $COMPOSE_DEV up -d --build
+  tput bel
+
+fi

@@ -3,3 +3,7 @@
 
 en:
   hello: "Hello world"
+  quantity_unit: "Units"
+  quantity_maximum: "Maximum quantity"
+  quantity_minimum: "Minimum quantity"
+  quantity_increment: "Increment quantity by"
